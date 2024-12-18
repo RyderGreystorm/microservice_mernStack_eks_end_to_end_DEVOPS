@@ -1,7 +1,7 @@
 
 # The Complete End-to-End DevOps Project - Part 2
 
-This project is a continuation of the previous repository, **[microservice_mern_stack_eks_infrastructure](https://github.com/your-repo-link)**. In the first part, we fully automated the deployment of a production-grade EKS (Elastic Kubernetes Service) cluster. 
+This project is a continuation of the previous repository, **[microservice_mern_stack_eks_infrastructure](https://github.com/RyderGreystorm/microservice_mern_stack_eks_infrastructure)**. In the first part, we fully automated the deployment of a production-grade EKS (Elastic Kubernetes Service) cluster. 
 
 ## Objectives
 
