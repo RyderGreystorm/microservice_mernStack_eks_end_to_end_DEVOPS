@@ -26,8 +26,11 @@ resource "aws_instance" "web" {
   key_name = aws_key_pair.key_pair.key_name
   subnet_id = aws_subnet.pub-subnet[0].id
   vpc_security_group_ids = [aws_security_group.jenkins-sg11.id]
-
+  root_block_device {
+    volume_size = var.instance_volume
+  }
   tags = {
     Name = "Jenkins-server"
   }
+  
 }
