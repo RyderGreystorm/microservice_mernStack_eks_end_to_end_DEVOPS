@@ -1,9 +1,0 @@
-vpc-name =  "Jenkins-vpc"
-cidr_block = "10.0.0.0/16"
-availability_zones = ["us-east-1a", "us-east-1b"]
-subnets_cidr =  ["10.0.1.0/24", "10.0.2.0/24"]
-ports = [22, 8080, 9000, 9090, 80]
-instance_type = "t2.medium"
-instance_volume = 30
-priv-key = "../keys/jenkinstf"
-pub-key = "../keys/jenkinstf.pub"

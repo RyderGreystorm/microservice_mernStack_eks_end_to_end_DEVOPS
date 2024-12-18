@@ -60,7 +60,7 @@ resource "aws_security_group" "jenkins-sg11" {
         from_port = port
         to_port = port
         protocol = "tcp"
-        ivp6_cidr_blocks = ["::0/"]
+        ipv6_cidr_blocks = ["::/0"]
         self = false
         prefix_list_ids = []
         security_groups = []
