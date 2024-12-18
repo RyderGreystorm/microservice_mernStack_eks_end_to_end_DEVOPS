@@ -5,10 +5,7 @@ pipeline {
     }
     environment {
         SCANNER_HOME=tool 'sonar'
-        AWS_ACCOUNT_ID = credentials('aws-acc-id')
-        AWS_ECR_REPO = credentials('REPO1.1')
         AWS_DEFAULT_REGION = 'us-east-1'
-        AWS_REPO_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
     }
     stages {
         stage('Cleaning workspace') {
@@ -38,6 +35,78 @@ pipeline {
             steps {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+        // stage('OWASP Dependency Check') {
+        //     steps {
+        //         dir('Source-code/backend'){
+        //             dependencyCheck additionalArguments: '--scan ./', odcInstallation: 'dc'
+        //             dependencyCheckPublisher pattern: '**/dependency-check-report.xml'}
+        //     }
+        // }
+        stage('Trivy File System Scan') {
+            steps {
+                dir('Source-code/backend') {
+                    sh 'trivy fs . > trivyfs.txt'
+                }
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                dir('Source-code/backend') {
+                     sh 'docker system prune -f'
+                     sh 'docker container prune -f'
+                     sh "docker build -t my-backend ."
+                }
+            }
+        }
+        stage('Push Image to private ECR repo') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred'],
+                    string(credentialsId: 'aws-acc-id', variable: 'AWS_ACCOUNT_ID'),
+                    string(credentialsId: 'repo1.1', variable: 'AWS_ECR_REPO')])
+                    {
+                    script {
+                        sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
+                        sh "docker tag ${AWS_ECR_REPO} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_REPO}:${BUILD_NUMBER}"
+                        sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_REPO}:${BUILD_NUMBER}"
+                        }
+                }
+
+            }
+        }
+        stage('Trivy scan DOCKER IMAGE') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred'],
+                    string(credentialsId: 'aws-acc-id', variable: 'AWS_ACCOUNT_ID'),
+                    string(credentialsId: 'repo1.1', variable: 'AWS_ECR_REPO')])
+                    {
+                        script {
+                        sh "trivy image ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_ECR_REPO}:${BUILD_NUMBER} > trivy_image_Scan.txt"
+                        }
+                }
+            }
+        }
+        stage('Update kubernetes backend yml manifests') {
+            environment {
+                GIT_REPO_NAME = "microservice_mernStack_eks_end_to_end_DEVOPS"
+                GIT_USER_NAME = "rydergreystorm"
+            }
+            steps{
+                dir('k8s-manifests/Backend') {
+                    withCredentials([string(credentialsId: 'github-auth', variable: 'GITHUB_AUTH'), string(credentialsId: 'repo1.1', variable: 'AWS_ECR_REPO')]) {
+                        sh """
+                        git config user.email 'biekrogodbless@gmail.com'
+                        git config user.name 'rydergreystorm'
+                        sed -i "s/${AWS_ECR_REPO}:\$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml)/${AWS_ECR_REPO}:${BUILD_NUMBER}/" deployment.yaml
+                        git add deployment.yaml
+                        git commit -m "Deployment updated with lates build \${BUILD_NUMBER}"
+                        git push https://${GITHUB_AUTH}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                        """
+                    }
                 }
             }
         }
