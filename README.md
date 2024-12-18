@@ -30,11 +30,11 @@ This project is ongoing, and updates will be added periodically as new features 
 ## How to Use
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/your-repo-link
+   git clone https://github.com/RyderGreystorm/microservice_mern_stack_eks_infrastructure
    ```
 2. Navigate to the project directory:  
    ```bash
-   cd devsecops_project_part2
+   cd Jenkins_IaC
    ```
 3. Follow the instructions in the setup documentation (to be updated).
 
