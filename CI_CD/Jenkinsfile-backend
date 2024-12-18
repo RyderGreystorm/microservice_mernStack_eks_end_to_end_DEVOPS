@@ -4,7 +4,7 @@ pipeline {
         nodejs 'nodejs'
     }
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SCANNER_HOME=tool 'sonar'
         AWS_ACCOUNT_ID = credentials('aws-acc-id')
         AWS_ECR_REPO = credentials('REPO1.1')
         AWS_DEFAULT_REGION = 'us-east-1'
@@ -19,6 +19,26 @@ pipeline {
         stage('Git Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/RyderGreystorm/microservice_mernStack_eks_end_to_end_DEVOPS'
+            }
+        }
+        stage('Sonarqube-analysis') {
+            steps {
+                dir('Source-code/backend') {
+                    withSonarQubeEnv('sonar-server') {
+                        sh """ $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=backend \
+                        -Dsonar.projectKey=backend \
+                        -Dsonar.sources=.
+                        """
+                    }
+                }
+            }
+        }
+        stage('Quality Check') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
             }
         }
     }
